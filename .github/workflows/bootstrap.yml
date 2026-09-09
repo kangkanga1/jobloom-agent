@@ -8,7 +8,7 @@ on:
 
 jobs:
   import-source:
-    if: github.event_name == 'push' && github.event.head_commit.message == 'chore: retry Jobloom source import'
+    if: "github.event_name == 'push' && github.event.head_commit.message == 'chore: retry Jobloom source import'"
     runs-on: ubuntu-latest
     permissions:
       contents: write
