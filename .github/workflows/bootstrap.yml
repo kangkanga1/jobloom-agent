@@ -5,36 +5,10 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
 
 jobs:
-  import-source:
-    if: "github.event_name == 'push' && github.event.head_commit.message == 'chore: retry Jobloom source import'"
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Expand and publish source tree
-        shell: bash
-        run: |
-          tar -xzf jobloom-source.tar.gz
-          rm -f jobloom-source.tar.gz .github/workflows/ci.yml
-          sed -i 's|actions/workflows/ci.yml|actions/workflows/bootstrap.yml|g' README.md
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "feat: publish Jobloom Agent source"
-          git push origin HEAD:main
-
   quality:
-    if: >-
-      github.event_name == 'pull_request' ||
-      (github.event.head_commit.message != 'fix: prepare resilient source import' &&
-      github.event.head_commit.message != 'chore: retry Jobloom source import')
     runs-on: ubuntu-latest
     permissions:
       contents: read
