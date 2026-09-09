@@ -1,18 +1,17 @@
-name: Bootstrap Jobloom source
+name: CI
 
 on:
   push:
     branches:
       - main
-    paths:
-      - jobloom-source.tar.gz
-
-permissions:
-  contents: write
+  pull_request:
 
 jobs:
-  publish-source:
+  import-source:
+    if: github.event_name == 'push' && github.event.head_commit.message == 'chore: retry Jobloom source import'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -23,9 +22,42 @@ jobs:
         shell: bash
         run: |
           tar -xzf jobloom-source.tar.gz
-          rm -f jobloom-source.tar.gz .github/workflows/bootstrap.yml
+          rm -f jobloom-source.tar.gz .github/workflows/ci.yml
+          sed -i 's|actions/workflows/ci.yml|actions/workflows/bootstrap.yml|g' README.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "feat: publish Jobloom Agent source"
           git push origin HEAD:main
+
+  quality:
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event.head_commit.message != 'fix: prepare resilient source import' &&
+      github.event.head_commit.message != 'chore: retry Jobloom source import')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run checks
+        run: pnpm check
+
+      - name: Build production bundle
+        run: pnpm build
